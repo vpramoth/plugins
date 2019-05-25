@@ -18,7 +18,9 @@ class FirebaseDynamicLinks {
 
   /// Singleton of [FirebaseDynamicLinks].
   static final FirebaseDynamicLinks instance = FirebaseDynamicLinks._();
+
   MessageHandler _onLink;
+
   /// Attempts to retrieve a pending dynamic link.
   ///
   /// This method always returns a Future. That Future completes to null if
@@ -54,19 +56,18 @@ class FirebaseDynamicLinks {
       iosData,
     );
   }
+
   void onLink(MessageHandler onLink) {
     _onLink = onLink;
     channel.setMethodCallHandler(_handleMethod);
   }
 
-   Future<dynamic> _handleMethod(MethodCall call) async {
+  Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case "onLink":
         return _onLink(call.arguments.cast<String, dynamic>());
     }
   }
-}	
-  
 }
 
 /// Provides data from received dynamic link.
