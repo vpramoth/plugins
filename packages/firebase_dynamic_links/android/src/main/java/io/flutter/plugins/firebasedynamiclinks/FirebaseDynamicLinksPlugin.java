@@ -1,5 +1,6 @@
 package io.flutter.plugins.firebasedynamiclinks;
 
+import android.content.Intent;
 import android.net.Uri;
 import androidx.annotation.NonNull;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -13,6 +14,7 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry.NewIntentListener;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,18 +22,52 @@ import java.util.List;
 import java.util.Map;
 
 /** FirebaseDynamicLinksPlugin */
-public class FirebaseDynamicLinksPlugin implements MethodCallHandler {
-  private Registrar registrar;
+public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentListener {
+  private Registrar registrar;	 
+  private final MethodChannel channel;
 
-  private FirebaseDynamicLinksPlugin(Registrar registrar) {
-    this.registrar = registrar;
-  }
 
-  public static void registerWith(Registrar registrar) {
+private FirebaseDynamicLinksPlugin(Registrar registrar, MethodChannel channel) {
+    this.registrar = registrar;	    
+    this.channel = channel;
+  }	  
+
+public static void registerWith(Registrar registrar) {
     final MethodChannel channel =
         new MethodChannel(registrar.messenger(), "plugins.flutter.io/firebase_dynamic_links");
-    channel.setMethodCallHandler(new FirebaseDynamicLinksPlugin(registrar));
+  final FirebaseDynamicLinksPlugin plugin = new FirebaseDynamicLinksPlugin(registrar, channel);
+    channel.setMethodCallHandler(plugin);
+    registrar.addNewIntentListener(plugin);
   }
+
+   @Override
+  public boolean onNewIntent(Intent intent) {
+    FirebaseDynamicLinks.getInstance()
+        .getDynamicLink(intent)
+        .addOnCompleteListener(
+            registrar.activity(),
+            new OnCompleteListener<PendingDynamicLinkData>() {
+              @Override
+              public void onComplete(@NonNull Task<PendingDynamicLinkData> task) {
+                if (task.isSuccessful()) {
+                  PendingDynamicLinkData data = task.getResult();
+                  if (data != null) {
+                    Map<String, Object> dynamicLink = new HashMap<>();
+                    dynamicLink.put("link", data.getLink().toString());
+
+                     Map<String, Object> androidData = new HashMap<>();
+                    androidData.put("clickTimestamp", data.getClickTimestamp());
+                    androidData.put("minimumVersion", data.getMinimumAppVersion());
+
+                     dynamicLink.put("android", androidData);
+                    channel.invokeMethod("onLink", dynamicLink);
+                  }
+                }
+              }
+            }
+        );
+    return false;
+}
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
