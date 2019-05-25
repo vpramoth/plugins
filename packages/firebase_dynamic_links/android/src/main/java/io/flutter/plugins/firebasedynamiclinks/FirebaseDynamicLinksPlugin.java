@@ -23,24 +23,23 @@ import java.util.Map;
 
 /** FirebaseDynamicLinksPlugin */
 public class FirebaseDynamicLinksPlugin implements MethodCallHandler, NewIntentListener {
-  private Registrar registrar;	 
+  private Registrar registrar;
   private final MethodChannel channel;
 
-
-private FirebaseDynamicLinksPlugin(Registrar registrar, MethodChannel channel) {
-    this.registrar = registrar;	    
+  private FirebaseDynamicLinksPlugin(Registrar registrar, MethodChannel channel) {
+    this.registrar = registrar;
     this.channel = channel;
-  }	  
+  }
 
-public static void registerWith(Registrar registrar) {
+  public static void registerWith(Registrar registrar) {
     final MethodChannel channel =
         new MethodChannel(registrar.messenger(), "plugins.flutter.io/firebase_dynamic_links");
-  final FirebaseDynamicLinksPlugin plugin = new FirebaseDynamicLinksPlugin(registrar, channel);
+    final FirebaseDynamicLinksPlugin plugin = new FirebaseDynamicLinksPlugin(registrar, channel);
     channel.setMethodCallHandler(plugin);
     registrar.addNewIntentListener(plugin);
   }
 
-   @Override
+  @Override
   public boolean onNewIntent(Intent intent) {
     FirebaseDynamicLinks.getInstance()
         .getDynamicLink(intent)
@@ -55,11 +54,11 @@ public static void registerWith(Registrar registrar) {
                     Map<String, Object> dynamicLink = new HashMap<>();
                     dynamicLink.put("link", data.getLink().toString());
 
-                     Map<String, Object> androidData = new HashMap<>();
+                    Map<String, Object> androidData = new HashMap<>();
                     androidData.put("clickTimestamp", data.getClickTimestamp());
                     androidData.put("minimumVersion", data.getMinimumAppVersion());
 
-                     dynamicLink.put("android", androidData);
+                    dynamicLink.put("android", androidData);
                     channel.invokeMethod("onLink", dynamicLink);
                   }
                 }
@@ -67,7 +66,7 @@ public static void registerWith(Registrar registrar) {
             }
         );
     return false;
-}
+  }
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
@@ -194,10 +193,10 @@ public static void registerWith(Registrar registrar) {
   private DynamicLink.Builder setupParameters(MethodCall call) {
     DynamicLink.Builder dynamicLinkBuilder = FirebaseDynamicLinks.getInstance().createDynamicLink();
 
-    String uriPrefix = call.argument("uriPrefix");
+    String domain = call.argument("domain");
     String link = call.argument("link");
 
-    dynamicLinkBuilder.setDomainUriPrefix(uriPrefix);
+    dynamicLinkBuilder.setDynamicLinkDomain(domain);
     dynamicLinkBuilder.setLink(Uri.parse(link));
 
     Map<String, Object> androidParameters = call.argument("androidParameters");
